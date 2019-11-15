@@ -18,13 +18,15 @@ setuptools.setup(
     description="Dagster utility functions/solids",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/ib-da-ncirl/db_toolkit",
+    url="https://github.com/ib-da-ncirl/dagster_toolkit",
     license='MIT',
     packages=setuptools.find_packages(),
     install_requires=[
-      'azure-cosmos>=3.1.2',
       'psycopg2>=2.8.4',
       'pymongo>=3.9.0'
+    ],
+    dependency_links=[
+        'git+https://github.com/ib-da-ncirl/db_toolkit.git#egg=db_toolkit',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',

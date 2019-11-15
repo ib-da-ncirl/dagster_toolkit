@@ -1,6 +1,6 @@
 # dagster_toolkit
 
-**dagster_toolkit** provides some utility functions/solids to work with dagster pipelines.
+**dagster_toolkit** provides some utility functions/solids to work with [Dagster](https://dagster.readthedocs.io/) pipelines.
 
 It is _definitely_ a work-in-progress.
 
@@ -30,11 +30,10 @@ Current functionality includes:
 ## Installation
 Please see https://packaging.python.org/tutorials/installing-packages/ for general information on installation methods.
 
-**dagster_toolkit** is currently available on Test PyPI https://test.pypi.org/project/dagster-toolkit/
+Install dependencies via
 
-
-
-    
+    pip install -r requirements.txt
+  
 ## Acknowledgements
 
 Package layout inspired by https://github.com/bast/somepackage
