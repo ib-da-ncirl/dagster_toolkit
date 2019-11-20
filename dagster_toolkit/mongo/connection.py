@@ -20,28 +20,61 @@
 # SOFTWARE.
 
 from db_toolkit.mongo import MongoDb
-from dagster import Failure
+from dagster import (
+    Failure,
+    resource,
+    Field,
+    String,
+    Bool
+)
+
+# see https://dagster.readthedocs.io/en/latest/sections/learn/tutorial/resources.html
 
 
-def get_mongo(context, server_cfg, fatal=True):
+class MongoWarehouse(object):
     """
-    Establish a connection to a MongoDB server
+    mongoDB data warehouse server object
+    """
+    def __init__(self, mongo_cfg, fatal=True):
+        """
+        Initialise object
+        :param mongo_cfg: path to server configuration file
+        :param fatal: Connection failure is fatal flag; default is True
+        """
+        self._mongo_cfg = mongo_cfg
+        self._fatal = fatal
+        self.client = None
+
+    def get_connection(self, context):
+        """
+        Establish a connection to the mongoDB server
+        :param context: execution context
+        :return: server object or None if unable to connect
+        :rtype: MongoDb
+        """
+        client = MongoDb(cfg_filename=self._mongo_cfg)
+        server = client['server']
+
+        if client.is_authenticated():
+            context.log.info(f'Connected to mongoDB: {server}')
+        else:
+            context.log.info(f'Unable to connect to mongoDB: {server}')
+            client.close_connection()
+            if self._fatal:
+                raise Failure(f'Unable to connect to mongoDB: {server}')
+            client = None
+
+        return client
+
+
+@resource(config={
+    'mongo_cfg': Field(String),
+    'fatal': Field(Bool, default_value=True, is_optional=True)
+})
+def mongo_warehouse_resource(context):
+    """
+    Resource constructor function for mongoDB database
     :param context: execution context
-    :param server_cfg: path to server configuration
-    :param fatal: Optional, fatal if no connection, if True raises Failure; default True
-    :return: server object or None if unable to connect
-    :rtype: MongoDb
+    :return:
     """
-    client = MongoDb(cfg_filename=server_cfg)
-    server = client['server']
-
-    if client.is_authenticated():
-        context.log.info(f'Connected to mongoDB: {server}')
-    else:
-        context.log.info(f'Unable to connect to mongoDB: {server}')
-        client.close_connection()
-        if fatal:
-            raise Failure(f'Unable to connect to mongoDB: {server}')
-        client = None
-
-    return client
+    return MongoWarehouse(context.resource_config['mongo_cfg'], context.resource_config['fatal'])

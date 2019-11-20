@@ -19,11 +19,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from .connection import get_postgres
+from .connection import postgres_warehouse_resource
 
 
 # if somebody does "from dagster_toolkit.postgres import *", this is what they will
 # be able to access:
 __all__ = [
-    'get_postgres',
+    'postgres_warehouse_resource',
 ]

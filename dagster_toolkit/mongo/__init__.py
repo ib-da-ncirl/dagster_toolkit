@@ -19,13 +19,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from .connection import get_mongo
+from .connection import mongo_warehouse_resource
 from .download_node import download_from_mongo
 
 
 # if somebody does "from dagster_toolkit.mongo import *", this is what they will
 # be able to access:
 __all__ = [
-    'get_mongo',
+    'mongo_warehouse_resource',
     'download_from_mongo',
 ]
