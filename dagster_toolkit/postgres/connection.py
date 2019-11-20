@@ -20,28 +20,61 @@
 # SOFTWARE.
 
 from db_toolkit.postgres import PostgresDb
-from dagster import Failure
+from dagster import (
+    Failure,
+    resource,
+    Field,
+    String,
+    Bool
+)
+
+# see https://dagster.readthedocs.io/en/latest/sections/learn/tutorial/resources.html
 
 
-def get_postgres(context, server_cfg, fatal=True):
+class PostgresWarehouse(object):
     """
-    Establish a connection to a Postgres server
+    Postgres data warehouse server object
+    """
+    def __init__(self, postgres_cfg, fatal=True):
+        """
+        Initialise object
+        :param postgres_cfg: path to server configuration file
+        :param fatal: Connection failure is fatal flag; default is True
+        """
+        self._postgres_cfg = postgres_cfg
+        self._fatal = fatal
+        self.client = None
+
+    def get_connection(self, context):
+        """
+        Establish a connection to the Postgres server
+        :param context: execution context
+        :return: server object or None if unable to connect
+        :rtype: PostgresDb
+        """
+        client = PostgresDb(cfg_filename=self._postgres_cfg)
+        server = client['host']
+
+        if client.get_connection() is not None:
+            context.log.info(f'Connected to Postgres: {server}')
+        else:
+            context.log.info(f'Unable to connect to Postgres: {server}')
+            client.close_connection()
+            if self._fatal:
+                raise Failure(f'Unable to connect to Postgres: {server}')
+            client = None
+
+        return client
+
+
+@resource(config={
+    'postgres_cfg': Field(String),
+    'fatal': Field(Bool, default_value=True, is_optional=True)
+})
+def postgres_warehouse_resource(context):
+    """
+    Resource constructor function for Postgres database
     :param context: execution context
-    :param server_cfg: path to server configuration
-    :param fatal: Optional, fatal if no connection, if True raises Failure; default True
-    :return: server object or None if unable to connect
-    :rtype: PostgresDb
+    :return:
     """
-    client = PostgresDb(cfg_filename=server_cfg)
-    server = client['host']
-
-    if client.get_connection() is not None:
-        context.log.info(f'Connected to Postgres: {server}')
-    else:
-        context.log.info(f'Unable to connect to Postgres: {server}')
-        client.close_connection()
-        if fatal:
-            raise Failure(f'Unable to connect to Postgres: {server}')
-        client = None
-
-    return client
+    return PostgresWarehouse(context.resource_config['postgres_cfg'], context.resource_config['fatal'])

@@ -19,16 +19,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from dagster_toolkit.mongo.connection import get_mongo
 from dagster import solid
 import pandas as pd
 
-@solid
-def download_from_mongo(context, server_cfg, sel_filter, projection):
+
+@solid(required_resource_keys={'mongo_warehouse'})
+def download_from_mongo(context, sel_filter, projection):
     """
     Download panda DataFrame from a mongoDB server
     :param context: execution context
-    :param server_cfg: path to server configuration
     :param sel_filter: a SON object specifying elements which must be present for a document to be included in the
                         result set
     :param projection: a list of field names that should be returned in the result set or a dict specifying the fields
@@ -39,11 +38,11 @@ def download_from_mongo(context, server_cfg, sel_filter, projection):
     """
     df = None
 
-    client = get_mongo(context, server_cfg)
+    client = context.resources.mongo_warehouse.get_connection(context)
 
     if client is not None:
-        db = client.get_connection()[client['dbname']]
-        collection = db[client['collection']]
+        # get database collection
+        collection = client.get_collection()
 
         # retrieve a cursor for required records
         # https://api.mongodb.com/python/current/api/pymongo/collection.html#pymongo.collection.Collection.find
