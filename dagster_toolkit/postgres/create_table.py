@@ -23,43 +23,40 @@ from dagster import solid
 import pandas as pd
 
 
-@solid(required_resource_keys={'mongo_warehouse'})
-def download_from_mongo(context, sel_filter, projection):
+@solid(required_resource_keys={'postgres_warehouse'})
+def query_table(context, sql):
     """
-    Download panda DataFrame from a mongoDB server
+    Execute an SQL
     :param context: execution context
-    :param sel_filter: a SON object specifying elements which must be present for a document to be included in the
-                        result set
-    :param projection: a list of field names that should be returned in the result set or a dict specifying the fields
-                        to include or exclude. If projection is a list “_id” will always be returned.
-                        Use a dict to exclude fields from the result (e.g. projection={‘_id’: False}).
+    :param sql: the SQL select query to execute
     :return: panda DataFrame or None
     :rtype: panda.DataFrame
     """
     df = None
 
-    client = context.resources.mongo_warehouse.get_connection(context)
+    client = context.resources.postgres_warehouse.get_connection(context)
 
     if client is not None:
-        # get database collection
-        collection = client.get_collection()
 
-        # retrieve a cursor for required records
-        # https://api.mongodb.com/python/current/api/pymongo/collection.html#pymongo.collection.Collection.find
-        context.log.info(f'Document retrieval in progress')
-        cursor = collection.find(filter=sel_filter, projection=projection)
+        context.log.info(f'Execute query')
 
-        entries = list(cursor)
-        context.log.info(f'{len(entries)} documents retrieved')
+        # execute the query and get all the results
+        cursor = client.cursor()
+        cursor.execute(sql)
+        # http://initd.org/psycopg/docs/cursor.html
+        results = cursor.fetchall()
+
+        context.log.info(f'{len(results)} records retrieved')
 
         context.log.info(f'DataFrame loading in progress')
-        df = pd.DataFrame.from_dict(entries)
+
+        # load the results into a DataFrame
+        df = pd.DataFrame.from_records(results)
+
+        context.log.info(f'Loaded {len(df)} records')
 
         # tidy up
         cursor.close()
         client.close_connection()
 
-        context.log.info(f'Loaded {len(df)} records')
-
     return df
-

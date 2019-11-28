@@ -26,6 +26,7 @@ setuptools.setup(
       'pymongo>=3.9.0',
       'dagster>=0.6.4',
       'dagit>=0.6.4',
+      'dagster_pandas>=0.6.4',
       'pandas>=0.25.3'
     ],
     dependency_links=[

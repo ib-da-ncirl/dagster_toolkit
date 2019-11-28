@@ -19,11 +19,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from .postgres.__init__ import __all__ as postgres_all
-from .mongo.__init__ import __all__ as mongo_all
-from .files.__init__ import __all__ as csv_all
-from .environ.__init__ import __all__ as environ_all
+from .environment_dict import EnvironmentDict
 
-# if somebody does "from dagster_toolkit import *", this is what they will
+
+# if somebody does "from dagster_toolkit.environ import *", this is what they will
 # be able to access:
-__all__ = postgres_all + mongo_all + csv_all + environ_all
+__all__ = [
+    'EnvironmentDict',
+]

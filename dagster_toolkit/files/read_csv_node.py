@@ -19,11 +19,39 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from .postgres.__init__ import __all__ as postgres_all
-from .mongo.__init__ import __all__ as mongo_all
-from .files.__init__ import __all__ as csv_all
-from .environ.__init__ import __all__ as environ_all
+import pandas as pd
+import os.path as path
+from dagster import (
+    solid,
+    Field,
+    String,
+    Bool,
+    Any,
+    List,
+    Dict,
+    InputDefinition,
+    OutputDefinition,
+    Output
+)
+from dagster_pandas import DataFrame
 
-# if somebody does "from dagster_toolkit import *", this is what they will
-# be able to access:
-__all__ = postgres_all + mongo_all + csv_all + environ_all
+
+@solid()
+def load_csv(context, csv_path: String, kwargs: Dict) -> DataFrame:
+    """
+    Load csv file and convert into a panda DataFrame
+    :param context: execution context
+    :param csv_path: path to io file
+    :param kwargs: dictionary of arguments as specified by the pandas.read_csv() function
+    :return: panda DataFrame of data from csv file
+    """
+    # verify csv path
+    if not path.exists(csv_path):
+        raise ValueError(f'Invalid csv file path: {csv_path}')
+
+    # https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_csv.html#pandas.read_csv
+    df = pd.read_csv(csv_path, **kwargs)
+
+    context.log.info(f'Loaded {len(df)} entries from {csv_path}')
+
+    return df

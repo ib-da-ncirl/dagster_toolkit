@@ -25,6 +25,7 @@ from dagster import (
     resource,
     Field,
     String,
+    Any,
     Bool
 )
 
@@ -38,7 +39,7 @@ class MongoWarehouse(object):
     def __init__(self, mongo_cfg, fatal=True):
         """
         Initialise object
-        :param mongo_cfg: path to server configuration file
+        :param mongo_cfg: path to server configuration file or configuration dict
         :param fatal: Connection failure is fatal flag; default is True
         """
         self._mongo_cfg = mongo_cfg
@@ -52,7 +53,13 @@ class MongoWarehouse(object):
         :return: server object or None if unable to connect
         :rtype: MongoDb
         """
-        client = MongoDb(cfg_filename=self._mongo_cfg)
+        if isinstance(self._mongo_cfg, str):
+            client = MongoDb(cfg_filename=self._mongo_cfg)
+        elif isinstance(self._mongo_cfg, dict):
+            client = MongoDb(cfg_dict=self._mongo_cfg)
+        else:
+            raise Failure(f'No configuration provided for MongoWarehouse')
+
         server = client['server']
 
         if client.is_authenticated():
@@ -68,7 +75,7 @@ class MongoWarehouse(object):
 
 
 @resource(config={
-    'mongo_cfg': Field(String),
+    'mongo_cfg': Field(Any),
     'fatal': Field(Bool, default_value=True, is_optional=True)
 })
 def mongo_warehouse_resource(context):

@@ -20,10 +20,12 @@
 # SOFTWARE.
 
 from .connection import postgres_warehouse_resource
+from .read_table import query_table
 
 
 # if somebody does "from dagster_toolkit.postgres import *", this is what they will
 # be able to access:
 __all__ = [
     'postgres_warehouse_resource',
+    'query_table',
 ]

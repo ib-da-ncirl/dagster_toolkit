@@ -25,6 +25,8 @@ from dagster import (
     resource,
     Field,
     String,
+    Dict,
+    Any,
     Bool
 )
 
@@ -38,7 +40,7 @@ class PostgresWarehouse(object):
     def __init__(self, postgres_cfg, fatal=True):
         """
         Initialise object
-        :param postgres_cfg: path to server configuration file
+        :param postgres_cfg: path to server configuration file or configuration dict
         :param fatal: Connection failure is fatal flag; default is True
         """
         self._postgres_cfg = postgres_cfg
@@ -52,7 +54,13 @@ class PostgresWarehouse(object):
         :return: server object or None if unable to connect
         :rtype: PostgresDb
         """
-        client = PostgresDb(cfg_filename=self._postgres_cfg)
+        if isinstance(self._postgres_cfg, str):
+            client = PostgresDb(cfg_filename=self._postgres_cfg)
+        elif isinstance(self._postgres_cfg, dict):
+            client = PostgresDb(cfg_dict=self._postgres_cfg)
+        else:
+            raise Failure(f'No configuration provided for PostgresWarehouse')
+
         server = client['host']
 
         if client.get_connection() is not None:
@@ -68,7 +76,7 @@ class PostgresWarehouse(object):
 
 
 @resource(config={
-    'postgres_cfg': Field(String),
+    'postgres_cfg': Field(Any),
     'fatal': Field(Bool, default_value=True, is_optional=True)
 })
 def postgres_warehouse_resource(context):
