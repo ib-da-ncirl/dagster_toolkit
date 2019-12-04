@@ -18,19 +18,38 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
-from .connection import postgres_warehouse_resource
-from .read_table import query_table
-from .create_table import does_psql_table_exist, create_table
-from .drop_table import drop_table
+import psycopg2
+from dagster import solid, String, Bool
+from db_toolkit.postgres import drop_table_sql
 
 
-# if somebody does "from dagster_toolkit.postgres import *", this is what they will
-# be able to access:
-__all__ = [
-    'postgres_warehouse_resource',
-    'query_table',
-    'does_psql_table_exist',
-    'create_table',
-    'drop_table',
-]
+@solid(required_resource_keys={'postgres_warehouse'})
+def drop_table(context, table_name: String) -> Bool:
+    """
+    Drop a table from the Postgres server if it exists
+    :param context: execution context
+    :param table_name: name of database table to upload to
+    """
+    dropped = False
+
+    client = context.resources.postgres_warehouse.get_connection(context)
+
+    if client is not None:
+
+        cursor = client.cursor()
+
+        try:
+            context.log.info(f'Execute drop table query for {table_name}')
+            cursor.execute(drop_table_sql(table_name))
+            client.commit()
+            dropped = True
+
+        except psycopg2.Error as e:
+            context.log.warn(f'Error: {e}')
+
+        finally:
+            # tidy up
+            cursor.close()
+            client.close_connection()
+
+    return dropped

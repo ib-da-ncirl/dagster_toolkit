@@ -19,64 +19,45 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import psycopg2
-from dagster import solid, String, Bool
-from db_toolkit.postgres import does_table_exist_sql
+from dagster import solid
+import pandas as pd
+from dagster import String, Optional
+from dagster_pandas import DataFrame
 
 
 @solid(required_resource_keys={'postgres_warehouse'})
-def does_psql_table_exist(context, name: String) -> Bool:
+def query_table(context, sql: String) -> Optional[DataFrame]:
     """
-    Check if a table exists in postgres
+    Execute an SQL
     :param context: execution context
-    :param name: name of database table to check
-    :return: True if exists
+    :param sql: the SQL select query to execute
+    :return: panda DataFrame or None
+    :rtype: panda.DataFrame
     """
-    exists = False
+    df = None
 
     client = context.resources.postgres_warehouse.get_connection(context)
 
     if client is not None:
 
-        context.log.info(f'Execute table "{name}" exists query')
+        context.log.info(f'Execute query')
 
-        try:
-            # execute the query and get all the results
-            cursor = client.cursor()
-            cursor.execute(does_table_exist_sql(name))
-            # http://initd.org/psycopg/docs/cursor.html
-            exists = cursor.fetchone()
-
-        except psycopg2.Error as e:
-            context.log.warn(f'Error: {e}')
-
-        finally:
-            # tidy up
-            cursor.close()
-            client.close_connection()
-
-    return exists
-
-
-@solid(required_resource_keys={'postgres_warehouse'})
-def create_table(context, create_columns: String, table_name: String):
-    """
-    Creating a table on the Postgres server if it doesn't exist
-    :param context: execution context
-    :param create_columns: database table columns
-    :param table_name: name of database table to upload to
-    """
-
-    client = context.resources.postgres_warehouse.get_connection(context)
-
-    if client is not None:
-
+        # execute the query and get all the results
         cursor = client.cursor()
 
-        create_table_query = f'CREATE TABLE IF NOT EXISTS {table_name} ({create_columns})'
         try:
-            context.log.info(f'Execute create table query for {table_name}')
-            cursor.execute(create_table_query)
-            client.commit()
+            cursor.execute(sql)
+            # http://initd.org/psycopg/docs/cursor.html
+            results = cursor.fetchall()
+
+            context.log.info(f'{len(results)} records retrieved')
+
+            context.log.info(f'DataFrame loading in progress')
+
+            # load the results into a DataFrame
+            df = pd.DataFrame.from_records(results)
+
+            context.log.info(f'Loaded {len(df)} records')
 
         except psycopg2.Error as e:
             context.log.warn(f'Error: {e}')
@@ -85,3 +66,5 @@ def create_table(context, create_columns: String, table_name: String):
             # tidy up
             cursor.close()
             client.close_connection()
+
+    return df

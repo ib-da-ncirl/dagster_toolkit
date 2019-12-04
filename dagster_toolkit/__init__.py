@@ -19,10 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from .postgres.__init__ import __all__ as postgres_all
-from .mongo.__init__ import __all__ as mongo_all
-from .files.__init__ import __all__ as csv_all
-from .environ.__init__ import __all__ as environ_all
+from dagster_toolkit.postgres.__init__ import __all__ as postgres_all
+from dagster_toolkit.mongo.__init__ import __all__ as mongo_all
+from dagster_toolkit.files.__init__ import __all__ as csv_all
+from dagster_toolkit.environ.__init__ import __all__ as environ_all
 
 # if somebody does "from dagster_toolkit import *", this is what they will
 # be able to access:
