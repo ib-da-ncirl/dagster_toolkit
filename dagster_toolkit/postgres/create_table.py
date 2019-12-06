@@ -19,11 +19,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import psycopg2
-from dagster import solid, String, Bool
+from dagster import solid, String, Bool, Field
 from db_toolkit.postgres import does_table_exist_sql
 
 
-@solid(required_resource_keys={'postgres_warehouse'})
+@solid(required_resource_keys={'postgres_warehouse'},
+       config={
+           'fatal': Field(
+               Bool,
+               default_value=True,
+               is_optional=True,
+               description='Controls whether exceptions cause a Failure or not',
+           )
+       }
+       )
 def does_psql_table_exist(context, name: String) -> Bool:
     """
     Check if a table exists in postgres
@@ -47,7 +56,9 @@ def does_psql_table_exist(context, name: String) -> Bool:
             exists = cursor.fetchone()
 
         except psycopg2.Error as e:
-            context.log.warn(f'Error: {e}')
+            context.log.error(f'Error: {e}')
+            if context.solid_config['fatal']:
+                raise e
 
         finally:
             # tidy up
@@ -57,7 +68,22 @@ def does_psql_table_exist(context, name: String) -> Bool:
     return exists
 
 
-@solid(required_resource_keys={'postgres_warehouse'})
+@solid(required_resource_keys={'postgres_warehouse'},
+       config={
+           'fatal': Field(
+               Bool,
+               default_value=True,
+               is_optional=True,
+               description='Controls whether exceptions cause a Failure or not',
+           ),
+           'if_not_exists': Field(
+               Bool,
+               default_value=True,
+               is_optional=True,
+               description='Controls whether IF NOT EXISTS clause is included in sql statement',
+           )
+       }
+       )
 def create_table(context, create_columns: String, table_name: String):
     """
     Creating a table on the Postgres server if it doesn't exist
@@ -72,14 +98,20 @@ def create_table(context, create_columns: String, table_name: String):
 
         cursor = client.cursor()
 
-        create_table_query = f'CREATE TABLE IF NOT EXISTS {table_name} ({create_columns})'
+        if context.solid_config['if_not_exists']:
+            exists = 'IF NOT EXISTS '
+        else:
+            exists = ''
+        create_table_query = f'CREATE TABLE {exists}{table_name} ({create_columns})'
         try:
-            context.log.info(f'Execute create table query for {table_name}')
+            context.log.info(f"Execute create table query for '{table_name}'")
             cursor.execute(create_table_query)
             client.commit()
 
         except psycopg2.Error as e:
-            context.log.warn(f'Error: {e}')
+            context.log.error(f'Error: {e}')
+            if context.solid_config['fatal']:
+                raise e
 
         finally:
             # tidy up

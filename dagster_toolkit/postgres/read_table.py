@@ -19,13 +19,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import psycopg2
-from dagster import solid
+from dagster import solid, Field, Bool
 import pandas as pd
 from dagster import String, Optional
 from dagster_pandas import DataFrame
 
 
-@solid(required_resource_keys={'postgres_warehouse'})
+@solid(required_resource_keys={'postgres_warehouse'},
+       config={
+           'fatal': Field(
+               Bool,
+               default_value=True,
+               is_optional=True,
+               description='Controls whether exceptions cause a Failure or not',
+           )
+       }
+       )
 def query_table(context, sql: String) -> Optional[DataFrame]:
     """
     Execute an SQL
@@ -60,7 +69,9 @@ def query_table(context, sql: String) -> Optional[DataFrame]:
             context.log.info(f'Loaded {len(df)} records')
 
         except psycopg2.Error as e:
-            context.log.warn(f'Error: {e}')
+            context.log.error(f'Error: {e}')
+            if context.solid_config['fatal']:
+                raise e
 
         finally:
             # tidy up

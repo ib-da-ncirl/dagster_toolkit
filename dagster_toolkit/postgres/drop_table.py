@@ -19,11 +19,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import psycopg2
-from dagster import solid, String, Bool
+from dagster import solid, String, Bool, Field
 from db_toolkit.postgres import drop_table_sql
 
 
-@solid(required_resource_keys={'postgres_warehouse'})
+@solid(required_resource_keys={'postgres_warehouse'},
+       config={
+           'fatal': Field(
+               Bool,
+               default_value=True,
+               is_optional=True,
+               description='Controls whether exceptions cause a Failure or not',
+           )
+       }
+       )
 def drop_table(context, table_name: String) -> Bool:
     """
     Drop a table from the Postgres server if it exists
@@ -45,7 +54,9 @@ def drop_table(context, table_name: String) -> Bool:
             dropped = True
 
         except psycopg2.Error as e:
-            context.log.warn(f'Error: {e}')
+            context.log.error(f'Error: {e}')
+            if context.solid_config['fatal']:
+                raise e
 
         finally:
             # tidy up
