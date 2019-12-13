@@ -21,6 +21,7 @@
 
 import pprint
 
+
 class EnvironmentDict:
     """
     Dagster environment dictionary builder
@@ -44,8 +45,17 @@ class EnvironmentDict:
         Add a solid to the environment dictionary
         :param solid_name: name of solid to add
         """
-        if self._solid_name_check(solid_name) == EnvironmentDict._VALID:
-            self._e_dict['solids'][solid_name] = {}
+        return self.__add_solid(solid_name)
+
+    def __add_solid(self, solid_name, chk_dict=None):
+        """
+        Add a solid to the environment dictionary
+        :param solid_name: name of solid to add
+        """
+        if self._solid_name_check(solid_name, chk_dict=chk_dict) == EnvironmentDict._VALID:
+            if chk_dict is None:
+                chk_dict = self._e_dict
+            chk_dict['solids'][solid_name] = {}
         return self
 
     def _key_check(self, key_list, chk_dict=None):
@@ -104,6 +114,7 @@ class EnvironmentDict:
         :param input_name: name of input to add to solid
         :param value: value to set for input
         :param is_kwargs: flag to indicate if input is a kwargs
+        :param chk_dict: environment dict to use
         """
         # add_solid_input('read_csv', 'csv_path', 'cereal.csv')
         # results in
@@ -139,6 +150,32 @@ class EnvironmentDict:
         else:
             solid_inputs[input_name] = {'value': value}
 
+    def add_composite_solid(self, solid_name, child_solid_name):
+        """
+        Add a composite solid to the environment dictionary
+        :param solid_name: name of solid
+        :param child_solid_name: name of child solid
+        """
+        # add_composite_solid('load_cereals', 'read_cereals')
+        # results in
+        # environment_dict = {
+        #     'solids': {
+        #         'load_cereals': {
+        #             'solids': {
+        #                 'read_csv': {}
+        #                 }
+        #             }
+        #          }
+        #     }
+        # }
+        name_check = self._solid_name_check(solid_name)
+        if name_check == EnvironmentDict._VALID or name_check == EnvironmentDict._EXISTS:
+            if name_check == EnvironmentDict._VALID:
+                self._e_dict['solids'][solid_name] = {'solids': {}}
+
+            composite_dict = self._e_dict['solids'][solid_name]
+            self.__add_solid(child_solid_name, chk_dict=composite_dict)
+        return self
 
     def add_composite_solid_input(self, solid_name, child_solid_name, input_name, value, is_kwargs=False):
         """
@@ -154,7 +191,7 @@ class EnvironmentDict:
         #     'solids': {
         #         'load_cereals': {
         #             'solids': {
-        #                 'read_csv': {
+        #                 'read_cereals': {
         #                     'inputs': {
         #                         'csv_path': {'value': 'cereal.csv'}
         #                     }

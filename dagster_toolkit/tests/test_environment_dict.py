@@ -22,6 +22,15 @@ class TestEnvironmentDict(TestCase):
         self.assertTrue('value' in environ._e_dict['solids']['new_solid']['inputs']['solid_ip'].keys())
         self.assertEqual(environ._e_dict['solids']['new_solid']['inputs']['solid_ip']['value'], 'ip_value')
 
+    def test_add_composite_solid(self):
+        environ = EnvironmentDict()
+        environ.add_composite_solid('new_solid', 'child_solid')
+
+        self.assertTrue('solids' in environ._e_dict.keys())
+        self.assertTrue('new_solid' in environ._e_dict['solids'].keys())
+        self.assertTrue('solids' in environ._e_dict['solids']['new_solid'].keys())
+        self.assertTrue('child_solid' in environ._e_dict['solids']['new_solid']['solids'].keys())
+
     def test_add_composite_solid_input(self):
         environ = EnvironmentDict()
         environ.add_composite_solid_input('new_solid', 'child_solid', 'solid_ip', 'ip_value')

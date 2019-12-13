@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import psycopg2
-from dagster import solid, Field, Bool
+from dagster import solid, Field, Bool, List
 import pandas as pd
 from dagster import String, Optional
 from dagster_pandas import DataFrame
@@ -43,13 +43,26 @@ def query_table(context, sql: String) -> Optional[DataFrame]:
     :return: panda DataFrame or None
     :rtype: panda.DataFrame
     """
+    return __run_query_table(context, None, sql)
+
+
+def __run_query_table(context, client, sql: String) -> Optional[DataFrame]:
+    """
+    Execute an SQL
+    :param context: execution context
+    :param sql: the SQL select query to execute
+    :return: panda DataFrame or None
+    :rtype: panda.DataFrame
+    """
     df = None
 
-    client = context.resources.postgres_warehouse.get_connection(context)
+    close_down = client is None
+    if close_down:
+        client = context.resources.postgres_warehouse.get_connection(context)
 
     if client is not None:
 
-        context.log.info(f'Execute query')
+        context.log.info(f"Execute query: '{sql}'")
 
         # execute the query and get all the results
         cursor = client.cursor()
@@ -76,6 +89,37 @@ def query_table(context, sql: String) -> Optional[DataFrame]:
         finally:
             # tidy up
             cursor.close()
-            client.close_connection()
+            if close_down:
+                client.close_connection()
 
     return df
+
+
+@solid(required_resource_keys={'postgres_warehouse'},
+       config={
+           'fatal': Field(
+               Bool,
+               default_value=True,
+               is_optional=True,
+               description='Controls whether exceptions cause a Failure or not',
+           )
+       }
+       )
+def multi_query_table(context, sql_list: List) -> List[Optional[DataFrame]]:
+    """
+    Execute an SQL
+    :param context: execution context
+    :param sql_list: list of SQL select queries to execute
+    :return: panda DataFrame or None
+    :rtype: panda.DataFrame
+    """
+    dfs = []
+
+    client = context.resources.postgres_warehouse.get_connection(context)
+
+    for sql in sql_list:
+        dfs.append(__run_query_table(context, client, sql))
+
+    client.close_connection()
+
+    return dfs
