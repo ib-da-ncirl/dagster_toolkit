@@ -23,10 +23,10 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=[
       'psycopg2>=2.8.4',
-      'pymongo>=3.9.0',
-      'dagster>=0.6.4',
-      'dagit>=0.6.4',
-      'dagster_pandas>=0.6.4',
+      'pymongo>=3.10.0',
+      'dagster>=0.6.6',
+      'dagit>=0.6.6',
+      'dagster_pandas>=0.6.6',
       'pandas>=0.25.3'
     ],
     dependency_links=[
