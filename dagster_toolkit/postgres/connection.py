@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2019 Ian Buttimer
+# Copyright (c) 2019-2021 Ian Buttimer
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -30,7 +30,7 @@ from dagster import (
     Bool
 )
 
-# see https://dagster.readthedocs.io/en/latest/sections/learn/tutorial/resources.html
+# see https://docs.dagster.io/tutorial/advanced-tutorial/pipelines#parameterizing-jobs-with-resources
 
 
 class PostgresWarehouse(object):
@@ -75,9 +75,9 @@ class PostgresWarehouse(object):
         return client
 
 
-@resource(config={
+@resource(config_schema={
     'postgres_cfg': Field(Any),
-    'fatal': Field(Bool, default_value=True, is_optional=True)
+    'fatal': Field(Bool, default_value=True, is_required=False)
 })
 def postgres_warehouse_resource(context):
     """
@@ -85,4 +85,5 @@ def postgres_warehouse_resource(context):
     :param context: execution context
     :return:
     """
-    return PostgresWarehouse(context.resource_config['postgres_cfg'], context.resource_config['fatal'])
+    return PostgresWarehouse(context.resource_config['postgres_cfg'],
+                             context.resource_config['fatal'])

@@ -24,10 +24,10 @@ setuptools.setup(
     install_requires=[
       'psycopg2>=2.8.4',
       'pymongo>=3.10.0',
-      'dagster>=0.6.6',
-      'dagit>=0.6.6',
-      'dagster_pandas>=0.6.6',
-      'pandas>=0.25.3'
+      'dagster>=0.13.1',
+      'dagit>=0.13.1',
+      'dagster_pandas>=0.13.1',
+      'pandas>=1.3.4'
     ],
     dependency_links=[
         'git+https://github.com/ib-da-ncirl/db_toolkit.git#egg=db_toolkit',

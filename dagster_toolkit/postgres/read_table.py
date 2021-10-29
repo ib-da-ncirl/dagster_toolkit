@@ -26,11 +26,11 @@ from dagster_pandas import DataFrame
 
 
 @solid(required_resource_keys={'postgres_warehouse'},
-       config={
+       config_schema={
            'fatal': Field(
                Bool,
                default_value=True,
-               is_optional=True,
+               is_required=False,
                description='Controls whether exceptions cause a Failure or not',
            )
        }
@@ -96,11 +96,11 @@ def __run_query_table(context, client, sql: String) -> Optional[DataFrame]:
 
 
 @solid(required_resource_keys={'postgres_warehouse'},
-       config={
+       config_schema={
            'fatal': Field(
                Bool,
                default_value=True,
-               is_optional=True,
+               is_required=False,
                description='Controls whether exceptions cause a Failure or not',
            )
        }

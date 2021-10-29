@@ -24,11 +24,11 @@ from db_toolkit.postgres import does_table_exist_sql
 
 
 @solid(required_resource_keys={'postgres_warehouse'},
-       config={
+       config_schema={
            'fatal': Field(
                Bool,
                default_value=True,
-               is_optional=True,
+               is_required=False,
                description='Controls whether exceptions cause a Failure or not',
            )
        }
@@ -69,18 +69,19 @@ def does_psql_table_exist(context, name: String) -> Bool:
 
 
 @solid(required_resource_keys={'postgres_warehouse'},
-       config={
+       config_schema={
            'fatal': Field(
                Bool,
                default_value=True,
-               is_optional=True,
+               is_required=False,
                description='Controls whether exceptions cause a Failure or not',
            ),
            'if_not_exists': Field(
                Bool,
                default_value=True,
-               is_optional=True,
-               description='Controls whether IF NOT EXISTS clause is included in sql statement',
+               is_required=False,
+               description='Controls whether IF NOT EXISTS clause is included '
+                           'in sql statement',
            )
        }
        )
@@ -102,7 +103,8 @@ def create_table(context, create_columns: String, table_name: String):
             exists = 'IF NOT EXISTS '
         else:
             exists = ''
-        create_table_query = f'CREATE TABLE {exists}{table_name} ({create_columns})'
+        create_table_query = f'CREATE TABLE {exists}{table_name} ' \
+                             f'({create_columns})'
         try:
             context.log.info(f"Execute create table query for '{table_name}'")
             cursor.execute(create_table_query)

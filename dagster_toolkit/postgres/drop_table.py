@@ -24,11 +24,11 @@ from db_toolkit.postgres import drop_table_sql
 
 
 @solid(required_resource_keys={'postgres_warehouse'},
-       config={
+       config_schema={
            'fatal': Field(
                Bool,
                default_value=True,
-               is_optional=True,
+               is_required=False,
                description='Controls whether exceptions cause a Failure or not',
            )
        }
